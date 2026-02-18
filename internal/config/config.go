@@ -42,6 +42,11 @@ type SchedulerConfig struct {
 }
 
 type SlackConfig struct {
+	ClientID      string
+	ClientSecret  string
+	RedirectURL   string
+	BotScopes     string
+	UserScopes    string
 	BotToken      string
 	SigningSecret string
 }
@@ -56,7 +61,7 @@ func Load() (Config, error) {
 			Environment: getEnv("APP_ENV", "development"),
 		},
 		Server: ServerConfig{
-			Port: getEnv("APP_PORT", "8080"),
+			Port: getEnv("APP_PORT", "9060"),
 		},
 		DB: DBConfig{
 			URL:             strings.TrimSpace(os.Getenv("DATABASE_URL")),
@@ -71,6 +76,11 @@ func Load() (Config, error) {
 			PollInterval: getDuration("SCHEDULER_POLL_INTERVAL", time.Minute),
 		},
 		Slack: SlackConfig{
+			ClientID:      strings.TrimSpace(os.Getenv("SLACK_CLIENT_ID")),
+			ClientSecret:  strings.TrimSpace(os.Getenv("SLACK_CLIENT_SECRET")),
+			RedirectURL:   strings.TrimSpace(os.Getenv("SLACK_REDIRECT_URL")),
+			BotScopes:     getEnv("SLACK_BOT_SCOPES", "chat:write,channels:read,users:read"),
+			UserScopes:    strings.TrimSpace(os.Getenv("SLACK_USER_SCOPES")),
 			BotToken:      strings.TrimSpace(os.Getenv("SLACK_BOT_TOKEN")),
 			SigningSecret: strings.TrimSpace(os.Getenv("SLACK_SIGNING_SECRET")),
 		},

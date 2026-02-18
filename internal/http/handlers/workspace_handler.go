@@ -7,31 +7,43 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"slackcheers/internal/repository"
 	"slackcheers/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 type WorkspaceHandler struct {
 	dashboardSvc  *service.DashboardService
+	slackChannels *service.SlackChannelsService
 	workspaceRepo *repository.WorkspaceRepository
 }
 
-func NewWorkspaceHandler(dashboardSvc *service.DashboardService, workspaceRepo *repository.WorkspaceRepository) *WorkspaceHandler {
-	return &WorkspaceHandler{dashboardSvc: dashboardSvc, workspaceRepo: workspaceRepo}
+func NewWorkspaceHandler(
+	dashboardSvc *service.DashboardService,
+	slackChannels *service.SlackChannelsService,
+	workspaceRepo *repository.WorkspaceRepository,
+) *WorkspaceHandler {
+	return &WorkspaceHandler{
+		dashboardSvc:  dashboardSvc,
+		slackChannels: slackChannels,
+		workspaceRepo: workspaceRepo,
+	}
 }
 
-type bootstrapWorkspaceRequest struct {
-	SlackTeamID string `json:"slack_team_id" binding:"required"`
-	Name        string `json:"name" binding:"required"`
-	Timezone    string `json:"timezone" binding:"required"`
-	ChannelID   string `json:"channel_id" binding:"required"`
-	ChannelName string `json:"channel_name" binding:"required"`
-	PostingTime string `json:"posting_time" binding:"required"`
-}
-
+// BootstrapWorkspace godoc
+// @Summary Bootstrap a workspace
+// @Description Creates or updates a workspace and its default celebration channel.
+// @Tags workspaces
+// @Accept json
+// @Produce json
+// @Param request body BootstrapWorkspaceRequest true "Workspace bootstrap payload"
+// @Success 201 {object} BootstrapWorkspaceResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/bootstrap [post]
 func (h *WorkspaceHandler) BootstrapWorkspace(c *gin.Context) {
-	var req bootstrapWorkspaceRequest
+	var req BootstrapWorkspaceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -65,6 +77,18 @@ func (h *WorkspaceHandler) BootstrapWorkspace(c *gin.Context) {
 	})
 }
 
+// Overview godoc
+// @Summary List upcoming celebrations
+// @Description Returns upcoming birthdays and/or anniversaries for a workspace.
+// @Tags workspaces
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param days query int false "Number of days to include (default 30)"
+// @Param type query string false "Filter: all|birthdays|anniversaries"
+// @Success 200 {object} OverviewResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/overview [get]
 func (h *WorkspaceHandler) Overview(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	days := 30
@@ -92,6 +116,14 @@ func (h *WorkspaceHandler) Overview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
+// ListPeople godoc
+// @Summary List people in a workspace
+// @Tags people
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Success 200 {object} PeopleResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/people [get]
 func (h *WorkspaceHandler) ListPeople(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	people, err := h.dashboardSvc.ListPeople(c.Request.Context(), workspaceID)
@@ -103,23 +135,23 @@ func (h *WorkspaceHandler) ListPeople(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"people": people})
 }
 
-type upsertPersonRequest struct {
-	SlackHandle            string `json:"slack_handle" binding:"required"`
-	DisplayName            string `json:"display_name" binding:"required"`
-	AvatarURL              string `json:"avatar_url"`
-	BirthdayDay            *int   `json:"birthday_day"`
-	BirthdayMonth          *int   `json:"birthday_month"`
-	BirthdayYear           *int   `json:"birthday_year"`
-	HireDate               string `json:"hire_date"`
-	PublicCelebrationOptIn *bool  `json:"public_celebration_opt_in"`
-	RemindersMode          string `json:"reminders_mode"`
-}
-
+// UpsertPerson godoc
+// @Summary Create or update a person
+// @Tags people
+// @Accept json
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param slackUserID path string true "Slack User ID"
+// @Param request body UpsertPersonRequest true "Person payload"
+// @Success 200 {object} slackcheers_internal_domain.Person
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/people/{slackUserID} [put]
 func (h *WorkspaceHandler) UpsertPerson(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	slackUserID := c.Param("slackUserID")
 
-	var req upsertPersonRequest
+	var req UpsertPersonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -170,6 +202,14 @@ func (h *WorkspaceHandler) UpsertPerson(c *gin.Context) {
 	c.JSON(http.StatusOK, person)
 }
 
+// ListChannels godoc
+// @Summary List workspace channels
+// @Tags channels
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Success 200 {object} ChannelsResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/channels [get]
 func (h *WorkspaceHandler) ListChannels(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	channels, err := h.dashboardSvc.ListChannels(c.Request.Context(), workspaceID)
@@ -181,18 +221,62 @@ func (h *WorkspaceHandler) ListChannels(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"channels": channels})
 }
 
-type updateChannelSettingsRequest struct {
-	PostingTime          string `json:"posting_time" binding:"required"`
-	Timezone             string `json:"timezone" binding:"required"`
-	BirthdaysEnabled     *bool  `json:"birthdays_enabled" binding:"required"`
-	AnniversariesEnabled *bool  `json:"anniversaries_enabled" binding:"required"`
+// ListSlackChannels godoc
+// @Summary List Slack channels for workspace connection
+// @Description Fetches channels directly from Slack using the workspace-installed bot token.
+// @Tags channels
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Success 200 {object} SlackChannelsResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/slack/channels [get]
+func (h *WorkspaceHandler) ListSlackChannels(c *gin.Context) {
+	workspaceID := c.Param("workspaceID")
+	channels, err := h.slackChannels.ListChannels(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		if strings.Contains(strings.ToLower(err.Error()), "not connected") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	items := make([]SlackChannelItem, 0, len(channels))
+	for _, ch := range channels {
+		items = append(items, SlackChannelItem{
+			ID:        ch.ID,
+			Name:      ch.Name,
+			IsPrivate: ch.IsPrivate,
+		})
+	}
+
+	c.JSON(http.StatusOK, SlackChannelsResponse{Channels: items})
 }
 
+// UpdateChannelSettings godoc
+// @Summary Update channel settings
+// @Tags channels
+// @Accept json
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param channelID path string true "Channel ID"
+// @Param request body UpdateChannelSettingsRequest true "Channel settings payload"
+// @Success 200 {object} slackcheers_internal_domain.WorkspaceChannel
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/channels/{channelID}/settings [put]
 func (h *WorkspaceHandler) UpdateChannelSettings(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	channelID := c.Param("channelID")
 
-	var req updateChannelSettingsRequest
+	var req UpdateChannelSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -219,17 +303,23 @@ func (h *WorkspaceHandler) UpdateChannelSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, channel)
 }
 
-type updateChannelTemplatesRequest struct {
-	BirthdayTemplate    string `json:"birthday_template" binding:"required"`
-	AnniversaryTemplate string `json:"anniversary_template" binding:"required"`
-	BrandingEmoji       string `json:"branding_emoji"`
-}
-
+// UpdateChannelTemplates godoc
+// @Summary Update channel templates
+// @Tags channels
+// @Accept json
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param channelID path string true "Channel ID"
+// @Param request body UpdateChannelTemplatesRequest true "Channel templates payload"
+// @Success 200 {object} slackcheers_internal_domain.WorkspaceChannel
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/channels/{channelID}/templates [put]
 func (h *WorkspaceHandler) UpdateChannelTemplates(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	channelID := c.Param("channelID")
 
-	var req updateChannelTemplatesRequest
+	var req UpdateChannelTemplatesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -253,10 +343,4 @@ func (h *WorkspaceHandler) UpdateChannelTemplates(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, channel)
-}
-
-func (h *WorkspaceHandler) SlackOAuthCallback(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"message": "Slack OAuth callback endpoint is reserved; implement OAuth exchange next",
-	})
 }

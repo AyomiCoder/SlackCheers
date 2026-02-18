@@ -3,7 +3,7 @@ SHELL := /bin/zsh
 APP_NAME := slackcheers-api
 APP_BIN := bin/$(APP_NAME)
 
-.PHONY: help tools deps dev run build test fmt vet lint migration migrate-up migrate-down migrate-status clean
+.PHONY: help tools deps dev run build test fmt vet lint swagger migration migrate-up migrate-down migrate-status clean
 
 help:
 	@echo "Available targets:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make fmt              # format go files"
 	@echo "  make vet              # run go vet"
 	@echo "  make lint             # fmt check + vet"
+	@echo "  make swagger          # generate OpenAPI docs"
 	@echo "  make migration name=create_people_table"
 	@echo "  make migrate-up       # apply migrations"
 	@echo "  make migrate-down     # rollback 1 migration"
@@ -24,6 +25,7 @@ help:
 
 tools:
 	go install github.com/air-verse/air@latest
+	go install github.com/swaggo/swag/cmd/swag@latest
 
 deps:
 	go mod tidy
@@ -54,6 +56,9 @@ lint:
 		echo "Unformatted files:"; echo "$$unformatted"; exit 1; \
 	fi
 	go vet ./...
+
+swagger:
+	go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go -o docs/swagger --parseDependency --parseInternal
 
 migration:
 	@test -n "$(name)" || (echo "usage: make migration name=create_people_table" && exit 1)

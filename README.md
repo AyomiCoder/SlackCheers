@@ -61,18 +61,33 @@ On API boot (`cmd/api`), migrations run automatically when `MIGRATIONS_AUTO_APPL
 ## API routes (MVP)
 
 - `GET /healthz`
+- `GET /auth/slack/install`
 - `GET /auth/slack/callback`
+- `POST /slack/events`
 - `POST /api/workspaces/bootstrap`
 - `GET /api/workspaces/:workspaceID/overview?days=30&type=all`
 - `GET /api/workspaces/:workspaceID/people`
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
+- `GET /api/workspaces/:workspaceID/slack/channels`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
 
+## Swagger docs
+
+Generate OpenAPI docs:
+
+```bash
+make swagger
+```
+
+Then run the API and open:
+
+- `http://localhost:9060/swagger/index.html`
+
 ## Notes
 
-- The Slack client is intentionally a no-op implementation right now to keep setup clean. Replace `internal/slack` with a real Slack API integration next.
+- Celebration message posting still uses a no-op Slack client in `internal/slack`; OAuth install, callback, events verification, and channel discovery endpoints call Slack APIs directly.
 - Scheduler uses exact day matching for weekends (no weekend carry-forward), matching MVP scope.
 
 See docs:

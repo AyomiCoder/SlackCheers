@@ -22,6 +22,9 @@ Core values:
 - `APP_PORT`
 - `MIGRATIONS_AUTO_APPLY`
 - `SCHEDULER_ENABLED`
+- `SLACK_CLIENT_ID`
+- `SLACK_CLIENT_SECRET`
+- `SLACK_REDIRECT_URL`
 - `SLACK_BOT_TOKEN`
 - `SLACK_SIGNING_SECRET`
 
@@ -34,13 +37,21 @@ Core values:
 
 API startup also applies migrations when `MIGRATIONS_AUTO_APPLY=true`.
 
+## Swagger
+
+- Generate docs: `make swagger`
+- Swagger UI: `http://localhost:9060/swagger/index.html`
+
 ## API contract (initial)
 
-- `GET /auth/slack/callback` (placeholder for OAuth exchange)
+- `GET /auth/slack/install`
+- `GET /auth/slack/callback`
+- `POST /slack/events`
 - `GET /api/workspaces/:workspaceID/overview`
 - `GET /api/workspaces/:workspaceID/people`
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
+- `GET /api/workspaces/:workspaceID/slack/channels`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
 

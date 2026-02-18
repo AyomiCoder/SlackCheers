@@ -1,0 +1,985 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "SlackCheers API for workspace setup, people management, channel settings, and celebrations.",
+        "title": "SlackCheers API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/api/workspaces/bootstrap": {
+            "post": {
+                "description": "Creates or updates a workspace and its default celebration channel.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspaces"
+                ],
+                "summary": "Bootstrap a workspace",
+                "parameters": [
+                    {
+                        "description": "Workspace bootstrap payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.BootstrapWorkspaceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.BootstrapWorkspaceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/channels": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "List workspace channels",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ChannelsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/channels/{channelID}/settings": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Update channel settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel ID",
+                        "name": "channelID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Channel settings payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.UpdateChannelSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/slackcheers_internal_domain.WorkspaceChannel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/channels/{channelID}/templates": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Update channel templates",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel ID",
+                        "name": "channelID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Channel templates payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.UpdateChannelTemplatesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/slackcheers_internal_domain.WorkspaceChannel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/overview": {
+            "get": {
+                "description": "Returns upcoming birthdays and/or anniversaries for a workspace.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspaces"
+                ],
+                "summary": "List upcoming celebrations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of days to include (default 30)",
+                        "name": "days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter: all|birthdays|anniversaries",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.OverviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/people": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "people"
+                ],
+                "summary": "List people in a workspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.PeopleResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/people/{slackUserID}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "people"
+                ],
+                "summary": "Create or update a person",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Slack User ID",
+                        "name": "slackUserID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Person payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.UpsertPersonRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/slackcheers_internal_domain.Person"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/slack/channels": {
+            "get": {
+                "description": "Fetches channels directly from Slack using the workspace-installed bot token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "List Slack channels for workspace connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.SlackChannelsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/slack/callback": {
+            "get": {
+                "description": "Exchanges OAuth code, stores workspace install metadata, and returns connected workspace details.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Slack OAuth callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Slack OAuth code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Opaque CSRF state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Slack OAuth error",
+                        "name": "error",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.SlackConnectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/slack/install": {
+            "get": {
+                "description": "Redirects to Slack OAuth consent page. Use mode=json to return URL without redirect.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Start Slack install",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Opaque CSRF state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set to json to return install URL",
+                        "name": "mode",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.SlackInstallURLResponse"
+                        }
+                    },
+                    "307": {
+                        "description": "Temporary Redirect",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/slack/events": {
+            "post": {
+                "description": "Verifies Slack signatures and handles URL verification challenge.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "slack"
+                ],
+                "summary": "Slack events webhook",
+                "parameters": [
+                    {
+                        "description": "Slack event payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.SlackEventEnvelope"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.SlackEventAckResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "internal_http_handlers.BootstrapWorkspaceRequest": {
+            "type": "object",
+            "required": [
+                "channel_id",
+                "channel_name",
+                "name",
+                "posting_time",
+                "slack_team_id",
+                "timezone"
+            ],
+            "properties": {
+                "channel_id": {
+                    "type": "string"
+                },
+                "channel_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "posting_time": {
+                    "type": "string"
+                },
+                "slack_team_id": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.BootstrapWorkspaceResponse": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "$ref": "#/definitions/slackcheers_internal_domain.WorkspaceChannel"
+                },
+                "workspace": {
+                    "$ref": "#/definitions/slackcheers_internal_domain.Workspace"
+                }
+            }
+        },
+        "internal_http_handlers.ChannelsResponse": {
+            "type": "object",
+            "properties": {
+                "channels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/slackcheers_internal_domain.WorkspaceChannel"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.OverviewResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/slackcheers_internal_domain.UpcomingCelebration"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.PeopleResponse": {
+            "type": "object",
+            "properties": {
+                "people": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/slackcheers_internal_domain.Person"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.SlackChannelItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_private": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.SlackChannelsResponse": {
+            "type": "object",
+            "properties": {
+                "channels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_http_handlers.SlackChannelItem"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.SlackConnectResponse": {
+            "type": "object",
+            "properties": {
+                "installation": {
+                    "$ref": "#/definitions/internal_http_handlers.SlackOAuthInstallation"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.SlackEventAckResponse": {
+            "type": "object",
+            "properties": {
+                "challenge": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_http_handlers.SlackEventEnvelope": {
+            "type": "object",
+            "properties": {
+                "challenge": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.SlackInstallURLResponse": {
+            "type": "object",
+            "properties": {
+                "install_url": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.SlackOAuthInstallation": {
+            "type": "object",
+            "properties": {
+                "bot_user_id": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "team_id": {
+                    "type": "string"
+                },
+                "team_name": {
+                    "type": "string"
+                },
+                "workspace_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.UpdateChannelSettingsRequest": {
+            "type": "object",
+            "required": [
+                "anniversaries_enabled",
+                "birthdays_enabled",
+                "posting_time",
+                "timezone"
+            ],
+            "properties": {
+                "anniversaries_enabled": {
+                    "type": "boolean"
+                },
+                "birthdays_enabled": {
+                    "type": "boolean"
+                },
+                "posting_time": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.UpdateChannelTemplatesRequest": {
+            "type": "object",
+            "required": [
+                "anniversary_template",
+                "birthday_template"
+            ],
+            "properties": {
+                "anniversary_template": {
+                    "type": "string"
+                },
+                "birthday_template": {
+                    "type": "string"
+                },
+                "branding_emoji": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.UpsertPersonRequest": {
+            "type": "object",
+            "required": [
+                "display_name",
+                "slack_handle"
+            ],
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "birthday_day": {
+                    "type": "integer"
+                },
+                "birthday_month": {
+                    "type": "integer"
+                },
+                "birthday_year": {
+                    "type": "integer"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "hire_date": {
+                    "type": "string"
+                },
+                "public_celebration_opt_in": {
+                    "type": "boolean"
+                },
+                "reminders_mode": {
+                    "type": "string"
+                },
+                "slack_handle": {
+                    "type": "string"
+                }
+            }
+        },
+        "slackcheers_internal_domain.Person": {
+            "type": "object",
+            "properties": {
+                "avatarURL": {
+                    "type": "string"
+                },
+                "birthdayDay": {
+                    "type": "integer"
+                },
+                "birthdayMonth": {
+                    "type": "integer"
+                },
+                "birthdayYear": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "hireDate": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "publicCelebrationOptIn": {
+                    "type": "boolean"
+                },
+                "remindersMode": {
+                    "type": "string"
+                },
+                "slackHandle": {
+                    "type": "string"
+                },
+                "slackUserID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "workspaceID": {
+                    "type": "string"
+                }
+            }
+        },
+        "slackcheers_internal_domain.UpcomingCelebration": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slackUser": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "years": {
+                    "type": "integer"
+                }
+            }
+        },
+        "slackcheers_internal_domain.Workspace": {
+            "type": "object",
+            "properties": {
+                "anniversariesEnabled": {
+                    "type": "boolean"
+                },
+                "birthdaysEnabled": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultTemplateStyle": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slackTeamID": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "slackcheers_internal_domain.WorkspaceChannel": {
+            "type": "object",
+            "properties": {
+                "anniversariesEnabled": {
+                    "type": "boolean"
+                },
+                "anniversaryTemplate": {
+                    "type": "string"
+                },
+                "birthdayTemplate": {
+                    "type": "string"
+                },
+                "birthdaysEnabled": {
+                    "type": "boolean"
+                },
+                "brandingEmoji": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "postingTime": {
+                    "type": "string"
+                },
+                "slackChannelID": {
+                    "type": "string"
+                },
+                "slackChannelName": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "workspaceID": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

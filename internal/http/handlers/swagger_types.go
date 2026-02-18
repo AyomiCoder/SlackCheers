@@ -1,0 +1,105 @@
+package handlers
+
+import "slackcheers/internal/domain"
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type MessageResponse struct {
+	Message string `json:"message"`
+}
+
+type HealthResponse struct {
+	Status string `json:"status"`
+}
+
+type BootstrapWorkspaceRequest struct {
+	SlackTeamID string `json:"slack_team_id" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Timezone    string `json:"timezone" binding:"required"`
+	ChannelID   string `json:"channel_id" binding:"required"`
+	ChannelName string `json:"channel_name" binding:"required"`
+	PostingTime string `json:"posting_time" binding:"required"`
+}
+
+type BootstrapWorkspaceResponse struct {
+	Workspace domain.Workspace        `json:"workspace"`
+	Channel   domain.WorkspaceChannel `json:"channel"`
+}
+
+type UpsertPersonRequest struct {
+	SlackHandle            string `json:"slack_handle" binding:"required"`
+	DisplayName            string `json:"display_name" binding:"required"`
+	AvatarURL              string `json:"avatar_url"`
+	BirthdayDay            *int   `json:"birthday_day"`
+	BirthdayMonth          *int   `json:"birthday_month"`
+	BirthdayYear           *int   `json:"birthday_year"`
+	HireDate               string `json:"hire_date"`
+	PublicCelebrationOptIn *bool  `json:"public_celebration_opt_in"`
+	RemindersMode          string `json:"reminders_mode"`
+}
+
+type UpdateChannelSettingsRequest struct {
+	PostingTime          string `json:"posting_time" binding:"required"`
+	Timezone             string `json:"timezone" binding:"required"`
+	BirthdaysEnabled     *bool  `json:"birthdays_enabled" binding:"required"`
+	AnniversariesEnabled *bool  `json:"anniversaries_enabled" binding:"required"`
+}
+
+type UpdateChannelTemplatesRequest struct {
+	BirthdayTemplate    string `json:"birthday_template" binding:"required"`
+	AnniversaryTemplate string `json:"anniversary_template" binding:"required"`
+	BrandingEmoji       string `json:"branding_emoji"`
+}
+
+type OverviewResponse struct {
+	Items []domain.UpcomingCelebration `json:"items"`
+}
+
+type PeopleResponse struct {
+	People []domain.Person `json:"people"`
+}
+
+type ChannelsResponse struct {
+	Channels []domain.WorkspaceChannel `json:"channels"`
+}
+
+type SlackInstallURLResponse struct {
+	InstallURL string `json:"install_url"`
+	State      string `json:"state"`
+}
+
+type SlackOAuthInstallation struct {
+	WorkspaceID string `json:"workspace_id"`
+	TeamID      string `json:"team_id"`
+	TeamName    string `json:"team_name"`
+	BotUserID   string `json:"bot_user_id"`
+	Scope       string `json:"scope"`
+}
+
+type SlackConnectResponse struct {
+	Status       string                 `json:"status"`
+	Installation SlackOAuthInstallation `json:"installation"`
+}
+
+type SlackEventEnvelope struct {
+	Type      string `json:"type"`
+	Token     string `json:"token"`
+	Challenge string `json:"challenge"`
+}
+
+type SlackEventAckResponse struct {
+	OK        bool   `json:"ok,omitempty"`
+	Challenge string `json:"challenge,omitempty"`
+}
+
+type SlackChannelItem struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	IsPrivate bool   `json:"is_private"`
+}
+
+type SlackChannelsResponse struct {
+	Channels []SlackChannelItem `json:"channels"`
+}

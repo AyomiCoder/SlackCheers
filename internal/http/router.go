@@ -4,6 +4,8 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"slackcheers/internal/http/handlers"
 	"slackcheers/internal/http/middleware"
 )
@@ -11,6 +13,7 @@ import (
 type RouterDependencies struct {
 	Logger           *slog.Logger
 	HealthHandler    *handlers.HealthHandler
+	AuthHandler      *handlers.AuthHandler
 	WorkspaceHandler *handlers.WorkspaceHandler
 }
 
@@ -20,7 +23,10 @@ func NewRouter(deps RouterDependencies) *gin.Engine {
 	r.Use(middleware.RequestLogger(deps.Logger))
 
 	r.GET("/healthz", deps.HealthHandler.Healthz)
-	r.GET("/auth/slack/callback", deps.WorkspaceHandler.SlackOAuthCallback)
+	r.GET("/auth/slack/install", deps.AuthHandler.SlackInstall)
+	r.GET("/auth/slack/callback", deps.AuthHandler.SlackOAuthCallback)
+	r.POST("/slack/events", deps.AuthHandler.SlackEvents)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api")
 	{
@@ -29,6 +35,7 @@ func NewRouter(deps RouterDependencies) *gin.Engine {
 		api.GET("/workspaces/:workspaceID/people", deps.WorkspaceHandler.ListPeople)
 		api.PUT("/workspaces/:workspaceID/people/:slackUserID", deps.WorkspaceHandler.UpsertPerson)
 		api.GET("/workspaces/:workspaceID/channels", deps.WorkspaceHandler.ListChannels)
+		api.GET("/workspaces/:workspaceID/slack/channels", deps.WorkspaceHandler.ListSlackChannels)
 		api.PUT("/workspaces/:workspaceID/channels/:channelID/settings", deps.WorkspaceHandler.UpdateChannelSettings)
 		api.PUT("/workspaces/:workspaceID/channels/:channelID/templates", deps.WorkspaceHandler.UpdateChannelTemplates)
 	}

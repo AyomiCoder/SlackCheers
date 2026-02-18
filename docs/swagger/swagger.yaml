@@ -1,0 +1,651 @@
+basePath: /
+definitions:
+  internal_http_handlers.BootstrapWorkspaceRequest:
+    properties:
+      channel_id:
+        type: string
+      channel_name:
+        type: string
+      name:
+        type: string
+      posting_time:
+        type: string
+      slack_team_id:
+        type: string
+      timezone:
+        type: string
+    required:
+    - channel_id
+    - channel_name
+    - name
+    - posting_time
+    - slack_team_id
+    - timezone
+    type: object
+  internal_http_handlers.BootstrapWorkspaceResponse:
+    properties:
+      channel:
+        $ref: '#/definitions/slackcheers_internal_domain.WorkspaceChannel'
+      workspace:
+        $ref: '#/definitions/slackcheers_internal_domain.Workspace'
+    type: object
+  internal_http_handlers.ChannelsResponse:
+    properties:
+      channels:
+        items:
+          $ref: '#/definitions/slackcheers_internal_domain.WorkspaceChannel'
+        type: array
+    type: object
+  internal_http_handlers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  internal_http_handlers.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  internal_http_handlers.OverviewResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/slackcheers_internal_domain.UpcomingCelebration'
+        type: array
+    type: object
+  internal_http_handlers.PeopleResponse:
+    properties:
+      people:
+        items:
+          $ref: '#/definitions/slackcheers_internal_domain.Person'
+        type: array
+    type: object
+  internal_http_handlers.SlackChannelItem:
+    properties:
+      id:
+        type: string
+      is_private:
+        type: boolean
+      name:
+        type: string
+    type: object
+  internal_http_handlers.SlackChannelsResponse:
+    properties:
+      channels:
+        items:
+          $ref: '#/definitions/internal_http_handlers.SlackChannelItem'
+        type: array
+    type: object
+  internal_http_handlers.SlackConnectResponse:
+    properties:
+      installation:
+        $ref: '#/definitions/internal_http_handlers.SlackOAuthInstallation'
+      status:
+        type: string
+    type: object
+  internal_http_handlers.SlackEventAckResponse:
+    properties:
+      challenge:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  internal_http_handlers.SlackEventEnvelope:
+    properties:
+      challenge:
+        type: string
+      token:
+        type: string
+      type:
+        type: string
+    type: object
+  internal_http_handlers.SlackInstallURLResponse:
+    properties:
+      install_url:
+        type: string
+      state:
+        type: string
+    type: object
+  internal_http_handlers.SlackOAuthInstallation:
+    properties:
+      bot_user_id:
+        type: string
+      scope:
+        type: string
+      team_id:
+        type: string
+      team_name:
+        type: string
+      workspace_id:
+        type: string
+    type: object
+  internal_http_handlers.UpdateChannelSettingsRequest:
+    properties:
+      anniversaries_enabled:
+        type: boolean
+      birthdays_enabled:
+        type: boolean
+      posting_time:
+        type: string
+      timezone:
+        type: string
+    required:
+    - anniversaries_enabled
+    - birthdays_enabled
+    - posting_time
+    - timezone
+    type: object
+  internal_http_handlers.UpdateChannelTemplatesRequest:
+    properties:
+      anniversary_template:
+        type: string
+      birthday_template:
+        type: string
+      branding_emoji:
+        type: string
+    required:
+    - anniversary_template
+    - birthday_template
+    type: object
+  internal_http_handlers.UpsertPersonRequest:
+    properties:
+      avatar_url:
+        type: string
+      birthday_day:
+        type: integer
+      birthday_month:
+        type: integer
+      birthday_year:
+        type: integer
+      display_name:
+        type: string
+      hire_date:
+        type: string
+      public_celebration_opt_in:
+        type: boolean
+      reminders_mode:
+        type: string
+      slack_handle:
+        type: string
+    required:
+    - display_name
+    - slack_handle
+    type: object
+  slackcheers_internal_domain.Person:
+    properties:
+      avatarURL:
+        type: string
+      birthdayDay:
+        type: integer
+      birthdayMonth:
+        type: integer
+      birthdayYear:
+        type: integer
+      createdAt:
+        type: string
+      displayName:
+        type: string
+      hireDate:
+        type: string
+      id:
+        type: string
+      publicCelebrationOptIn:
+        type: boolean
+      remindersMode:
+        type: string
+      slackHandle:
+        type: string
+      slackUserID:
+        type: string
+      updatedAt:
+        type: string
+      workspaceID:
+        type: string
+    type: object
+  slackcheers_internal_domain.UpcomingCelebration:
+    properties:
+      date:
+        type: string
+      name:
+        type: string
+      slackUser:
+        type: string
+      type:
+        type: string
+      userID:
+        type: string
+      years:
+        type: integer
+    type: object
+  slackcheers_internal_domain.Workspace:
+    properties:
+      anniversariesEnabled:
+        type: boolean
+      birthdaysEnabled:
+        type: boolean
+      createdAt:
+        type: string
+      defaultTemplateStyle:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slackTeamID:
+        type: string
+      timezone:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  slackcheers_internal_domain.WorkspaceChannel:
+    properties:
+      anniversariesEnabled:
+        type: boolean
+      anniversaryTemplate:
+        type: string
+      birthdayTemplate:
+        type: string
+      birthdaysEnabled:
+        type: boolean
+      brandingEmoji:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      postingTime:
+        type: string
+      slackChannelID:
+        type: string
+      slackChannelName:
+        type: string
+      timezone:
+        type: string
+      updatedAt:
+        type: string
+      workspaceID:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: SlackCheers API for workspace setup, people management, channel settings,
+    and celebrations.
+  title: SlackCheers API
+  version: "1.0"
+paths:
+  /api/workspaces/{workspaceID}/channels:
+    get:
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ChannelsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: List workspace channels
+      tags:
+      - channels
+  /api/workspaces/{workspaceID}/channels/{channelID}/settings:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Channel ID
+        in: path
+        name: channelID
+        required: true
+        type: string
+      - description: Channel settings payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.UpdateChannelSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/slackcheers_internal_domain.WorkspaceChannel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Update channel settings
+      tags:
+      - channels
+  /api/workspaces/{workspaceID}/channels/{channelID}/templates:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Channel ID
+        in: path
+        name: channelID
+        required: true
+        type: string
+      - description: Channel templates payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.UpdateChannelTemplatesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/slackcheers_internal_domain.WorkspaceChannel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Update channel templates
+      tags:
+      - channels
+  /api/workspaces/{workspaceID}/overview:
+    get:
+      description: Returns upcoming birthdays and/or anniversaries for a workspace.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Number of days to include (default 30)
+        in: query
+        name: days
+        type: integer
+      - description: 'Filter: all|birthdays|anniversaries'
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.OverviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: List upcoming celebrations
+      tags:
+      - workspaces
+  /api/workspaces/{workspaceID}/people:
+    get:
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.PeopleResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: List people in a workspace
+      tags:
+      - people
+  /api/workspaces/{workspaceID}/people/{slackUserID}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Slack User ID
+        in: path
+        name: slackUserID
+        required: true
+        type: string
+      - description: Person payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.UpsertPersonRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/slackcheers_internal_domain.Person'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Create or update a person
+      tags:
+      - people
+  /api/workspaces/{workspaceID}/slack/channels:
+    get:
+      description: Fetches channels directly from Slack using the workspace-installed
+        bot token.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.SlackChannelsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: List Slack channels for workspace connection
+      tags:
+      - channels
+  /api/workspaces/bootstrap:
+    post:
+      consumes:
+      - application/json
+      description: Creates or updates a workspace and its default celebration channel.
+      parameters:
+      - description: Workspace bootstrap payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.BootstrapWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_http_handlers.BootstrapWorkspaceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Bootstrap a workspace
+      tags:
+      - workspaces
+  /auth/slack/callback:
+    get:
+      description: Exchanges OAuth code, stores workspace install metadata, and returns
+        connected workspace details.
+      parameters:
+      - description: Slack OAuth code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: Opaque CSRF state
+        in: query
+        name: state
+        type: string
+      - description: Slack OAuth error
+        in: query
+        name: error
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.SlackConnectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Slack OAuth callback
+      tags:
+      - auth
+  /auth/slack/install:
+    get:
+      description: Redirects to Slack OAuth consent page. Use mode=json to return
+        URL without redirect.
+      parameters:
+      - description: Opaque CSRF state
+        in: query
+        name: state
+        type: string
+      - description: Set to json to return install URL
+        in: query
+        name: mode
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.SlackInstallURLResponse'
+        "307":
+          description: Temporary Redirect
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Start Slack install
+      tags:
+      - auth
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.HealthResponse'
+      summary: Health check
+      tags:
+      - health
+  /slack/events:
+    post:
+      consumes:
+      - application/json
+      description: Verifies Slack signatures and handles URL verification challenge.
+      parameters:
+      - description: Slack event payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.SlackEventEnvelope'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.SlackEventAckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Slack events webhook
+      tags:
+      - slack
+schemes:
+- http
+- https
+swagger: "2.0"

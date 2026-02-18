@@ -58,13 +58,17 @@ func New(ctx context.Context) (*App, error) {
 
 	celebrationSvc := service.NewCelebrationService(workspaceRepo, peopleRepo, slackClient, logger)
 	dashboardSvc := service.NewDashboardService(workspaceRepo, peopleRepo)
+	slackChannelsSvc := service.NewSlackChannelsService(workspaceRepo)
+	authSvc := service.NewSlackAuthService(cfg.Slack, workspaceRepo)
 
 	healthHandler := handlers.NewHealthHandler()
-	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, workspaceRepo)
+	authHandler := handlers.NewAuthHandler(authSvc, cfg.Slack.SigningSecret)
+	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, slackChannelsSvc, workspaceRepo)
 
 	router := apphttp.NewRouter(apphttp.RouterDependencies{
 		Logger:           logger,
 		HealthHandler:    healthHandler,
+		AuthHandler:      authHandler,
 		WorkspaceHandler: workspaceHandler,
 	})
 

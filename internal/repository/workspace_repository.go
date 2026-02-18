@@ -13,6 +13,21 @@ type WorkspaceRepository struct {
 	db *sql.DB
 }
 
+type WorkspaceSlackInstallation struct {
+	WorkspaceID string
+	SlackTeamID string
+	BotToken    string
+}
+
+type SaveSlackInstallationInput struct {
+	TeamID          string
+	TeamName        string
+	BotToken        string
+	BotUserID       string
+	InstallerUserID string
+	Scope           string
+}
+
 func NewWorkspaceRepository(db *sql.DB) *WorkspaceRepository {
 	return &WorkspaceRepository{db: db}
 }
@@ -41,6 +56,78 @@ RETURNING id, slack_team_id, name, timezone, created_at, updated_at
 	return w, nil
 }
 
+func (r *WorkspaceRepository) EnsureWorkspaceFromInstall(ctx context.Context, slackTeamID, name string) (domain.Workspace, error) {
+	const q = `
+INSERT INTO workspaces (slack_team_id, name, timezone)
+VALUES ($1, $2, 'UTC')
+ON CONFLICT (slack_team_id)
+DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
+RETURNING id, slack_team_id, name, timezone, created_at, updated_at
+`
+
+	var w domain.Workspace
+	if err := r.db.QueryRowContext(ctx, q, slackTeamID, name).Scan(
+		&w.ID,
+		&w.SlackTeamID,
+		&w.Name,
+		&w.Timezone,
+		&w.CreatedAt,
+		&w.UpdatedAt,
+	); err != nil {
+		return domain.Workspace{}, fmt.Errorf("ensure workspace from install: %w", err)
+	}
+
+	return w, nil
+}
+
+func (r *WorkspaceRepository) SaveSlackInstallation(ctx context.Context, in SaveSlackInstallationInput) (domain.Workspace, error) {
+	workspace, err := r.EnsureWorkspaceFromInstall(ctx, in.TeamID, in.TeamName)
+	if err != nil {
+		return domain.Workspace{}, err
+	}
+
+	const q = `
+UPDATE workspaces
+SET slack_bot_token = $2,
+    slack_bot_user_id = $3,
+    installed_by_user_id = $4,
+    installed_scopes = $5,
+    updated_at = NOW()
+WHERE id = $1
+`
+	if _, err := r.db.ExecContext(
+		ctx,
+		q,
+		workspace.ID,
+		in.BotToken,
+		in.BotUserID,
+		in.InstallerUserID,
+		in.Scope,
+	); err != nil {
+		return domain.Workspace{}, fmt.Errorf("save slack installation: %w", err)
+	}
+
+	return workspace, nil
+}
+
+func (r *WorkspaceRepository) GetSlackInstallationByWorkspaceID(ctx context.Context, workspaceID string) (WorkspaceSlackInstallation, error) {
+	const q = `
+SELECT id, slack_team_id, COALESCE(slack_bot_token, '')
+FROM workspaces
+WHERE id = $1
+`
+
+	var out WorkspaceSlackInstallation
+	if err := r.db.QueryRowContext(ctx, q, workspaceID).Scan(&out.WorkspaceID, &out.SlackTeamID, &out.BotToken); err != nil {
+		if err == sql.ErrNoRows {
+			return WorkspaceSlackInstallation{}, ErrNotFound
+		}
+		return WorkspaceSlackInstallation{}, fmt.Errorf("get workspace slack installation: %w", err)
+	}
+
+	return out, nil
+}
+
 func (r *WorkspaceRepository) CreateDefaultChannel(ctx context.Context, workspaceID, channelID, channelName, timezone, postingTime string) (domain.WorkspaceChannel, error) {
 	const q = `
 INSERT INTO workspace_channels (
@@ -56,7 +143,7 @@ DO UPDATE SET
 RETURNING id, workspace_id, slack_channel_id, slack_channel_name,
           to_char(posting_time, 'HH24:MI'), timezone,
           birthdays_enabled, anniversaries_enabled,
-          birthday_template, anniversary_template, branding_emoji,
+          birthday_template, anniversary_template, COALESCE(branding_emoji, ''),
           created_at, updated_at
 `
 
@@ -87,7 +174,7 @@ func (r *WorkspaceRepository) ListChannelsByWorkspace(ctx context.Context, works
 SELECT id, workspace_id, slack_channel_id, slack_channel_name,
        to_char(posting_time, 'HH24:MI'), timezone,
        birthdays_enabled, anniversaries_enabled,
-       birthday_template, anniversary_template, branding_emoji,
+       birthday_template, anniversary_template, COALESCE(branding_emoji, ''),
        created_at, updated_at
 FROM workspace_channels
 WHERE workspace_id = $1
@@ -138,11 +225,12 @@ SET posting_time = $3,
     birthdays_enabled = $5,
     anniversaries_enabled = $6,
     updated_at = NOW()
-WHERE workspace_id = $1 AND id = $2
+WHERE workspace_id = $1
+  AND (id::text = $2 OR slack_channel_id = $2)
 RETURNING id, workspace_id, slack_channel_id, slack_channel_name,
           to_char(posting_time, 'HH24:MI'), timezone,
           birthdays_enabled, anniversaries_enabled,
-          birthday_template, anniversary_template, branding_emoji,
+          birthday_template, anniversary_template, COALESCE(branding_emoji, ''),
           created_at, updated_at
 `
 
@@ -178,11 +266,12 @@ SET birthday_template = $3,
     anniversary_template = $4,
     branding_emoji = $5,
     updated_at = NOW()
-WHERE workspace_id = $1 AND id = $2
+WHERE workspace_id = $1
+  AND (id::text = $2 OR slack_channel_id = $2)
 RETURNING id, workspace_id, slack_channel_id, slack_channel_name,
           to_char(posting_time, 'HH24:MI'), timezone,
           birthdays_enabled, anniversaries_enabled,
-          birthday_template, anniversary_template, branding_emoji,
+          birthday_template, anniversary_template, COALESCE(branding_emoji, ''),
           created_at, updated_at
 `
 
@@ -216,7 +305,7 @@ func (r *WorkspaceRepository) ListDueChannels(ctx context.Context, now time.Time
 SELECT wc.id, wc.workspace_id, wc.slack_channel_id, wc.slack_channel_name,
        to_char(wc.posting_time, 'HH24:MI'), wc.timezone,
        wc.birthdays_enabled, wc.anniversaries_enabled,
-       wc.birthday_template, wc.anniversary_template, wc.branding_emoji,
+       wc.birthday_template, wc.anniversary_template, COALESCE(wc.branding_emoji, ''),
        wc.created_at, wc.updated_at
 FROM workspace_channels wc
 WHERE EXTRACT(HOUR FROM timezone(wc.timezone, $1)) = EXTRACT(HOUR FROM wc.posting_time)
