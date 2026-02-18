@@ -50,7 +50,8 @@ func New(ctx context.Context) (*App, error) {
 
 	workspaceRepo := repository.NewWorkspaceRepository(db)
 	peopleRepo := repository.NewPeopleRepository(db)
-	slackClient, err := slack.NewClient(cfg.Slack.BotToken, logger)
+	onboardingRepo := repository.NewOnboardingRepository(db)
+	slackClient, err := slack.NewClient(workspaceRepo, cfg.Slack.BotToken, logger)
 	if err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("build slack client: %w", err)
@@ -58,12 +59,13 @@ func New(ctx context.Context) (*App, error) {
 
 	celebrationSvc := service.NewCelebrationService(workspaceRepo, peopleRepo, slackClient, logger)
 	dashboardSvc := service.NewDashboardService(workspaceRepo, peopleRepo)
+	onboardingSvc := service.NewSlackOnboardingService(workspaceRepo, onboardingRepo)
 	slackChannelsSvc := service.NewSlackChannelsService(workspaceRepo)
 	authSvc := service.NewSlackAuthService(cfg.Slack, workspaceRepo)
 
 	healthHandler := handlers.NewHealthHandler()
 	authHandler := handlers.NewAuthHandler(authSvc, cfg.Slack.SigningSecret)
-	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, slackChannelsSvc, workspaceRepo)
+	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, onboardingSvc, slackChannelsSvc, workspaceRepo)
 
 	router := apphttp.NewRouter(apphttp.RouterDependencies{
 		Logger:           logger,

@@ -73,7 +73,7 @@ func (s *CelebrationService) runChannelCelebration(ctx context.Context, channel 
 			message := renderTemplate(channel.BirthdayTemplate, birthdays, nil)
 			message = appendBrandingEmoji(message, channel.BrandingEmoji)
 
-			if err := s.slackClient.PostMessage(ctx, channel.SlackChannelID, message, avatarURLs(birthdays)); err != nil {
+			if err := s.slackClient.PostMessage(ctx, channel.WorkspaceID, channel.SlackChannelID, message, avatarURLs(birthdays)); err != nil {
 				return fmt.Errorf("post birthday message: %w", err)
 			}
 		}
@@ -88,7 +88,7 @@ func (s *CelebrationService) runChannelCelebration(ctx context.Context, channel 
 			message := renderAnniversaryTemplate(channel.AnniversaryTemplate, anniversaries)
 			message = appendBrandingEmoji(message, channel.BrandingEmoji)
 
-			if err := s.slackClient.PostMessage(ctx, channel.SlackChannelID, message, avatarURLsFromAnniversaries(anniversaries)); err != nil {
+			if err := s.slackClient.PostMessage(ctx, channel.WorkspaceID, channel.SlackChannelID, message, avatarURLsFromAnniversaries(anniversaries)); err != nil {
 				return fmt.Errorf("post anniversary message: %w", err)
 			}
 		}

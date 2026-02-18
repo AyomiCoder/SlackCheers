@@ -46,6 +46,25 @@ definitions:
       status:
         type: string
     type: object
+  internal_http_handlers.OnboardingDMDispatchResponse:
+    properties:
+      failed:
+        type: integer
+      failed_details:
+        additionalProperties:
+          type: string
+        type: object
+      failed_users:
+        items:
+          type: string
+        type: array
+      sent:
+        type: integer
+      skipped:
+        type: integer
+      total_members:
+        type: integer
+    type: object
   internal_http_handlers.OverviewResponse:
     properties:
       items:
@@ -374,6 +393,38 @@ paths:
       summary: Update channel templates
       tags:
       - channels
+  /api/workspaces/{workspaceID}/onboarding/dm:
+    post:
+      description: Sends one onboarding DM per member (once only), asking for birthday
+        and work start date.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.OnboardingDMDispatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Send onboarding DMs to workspace members
+      tags:
+      - onboarding
   /api/workspaces/{workspaceID}/overview:
     get:
       description: Returns upcoming birthdays and/or anniversaries for a workspace.

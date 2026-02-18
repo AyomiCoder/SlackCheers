@@ -103,3 +103,12 @@ type SlackChannelItem struct {
 type SlackChannelsResponse struct {
 	Channels []SlackChannelItem `json:"channels"`
 }
+
+type OnboardingDMDispatchResponse struct {
+	TotalMembers  int               `json:"total_members"`
+	Sent          int               `json:"sent"`
+	Skipped       int               `json:"skipped"`
+	Failed        int               `json:"failed"`
+	FailedUsers   []string          `json:"failed_users"`
+	FailedDetails map[string]string `json:"failed_details"`
+}

@@ -15,17 +15,20 @@ import (
 
 type WorkspaceHandler struct {
 	dashboardSvc  *service.DashboardService
+	onboardingSvc *service.SlackOnboardingService
 	slackChannels *service.SlackChannelsService
 	workspaceRepo *repository.WorkspaceRepository
 }
 
 func NewWorkspaceHandler(
 	dashboardSvc *service.DashboardService,
+	onboardingSvc *service.SlackOnboardingService,
 	slackChannels *service.SlackChannelsService,
 	workspaceRepo *repository.WorkspaceRepository,
 ) *WorkspaceHandler {
 	return &WorkspaceHandler{
 		dashboardSvc:  dashboardSvc,
+		onboardingSvc: onboardingSvc,
 		slackChannels: slackChannels,
 		workspaceRepo: workspaceRepo,
 	}
@@ -219,6 +222,44 @@ func (h *WorkspaceHandler) ListChannels(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"channels": channels})
+}
+
+// SendOnboardingDMs godoc
+// @Summary Send onboarding DMs to workspace members
+// @Description Sends one onboarding DM per member (once only), asking for birthday and work start date.
+// @Tags onboarding
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Success 200 {object} OnboardingDMDispatchResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/onboarding/dm [post]
+func (h *WorkspaceHandler) SendOnboardingDMs(c *gin.Context) {
+	workspaceID := c.Param("workspaceID")
+	result, err := h.onboardingSvc.SendOnboardingDMs(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "not connected") || strings.Contains(msg, "slack api error") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, OnboardingDMDispatchResponse{
+		TotalMembers:  result.TotalMembers,
+		Sent:          result.Sent,
+		Skipped:       result.Skipped,
+		Failed:        result.Failed,
+		FailedUsers:   result.FailedUsers,
+		FailedDetails: result.FailedDetails,
+	})
 }
 
 // ListSlackChannels godoc

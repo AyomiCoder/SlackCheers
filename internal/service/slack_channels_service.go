@@ -28,6 +28,8 @@ type SlackChannel struct {
 type slackConversationsListResponse struct {
 	OK       bool   `json:"ok"`
 	Error    string `json:"error"`
+	Needed   string `json:"needed"`
+	Provided string `json:"provided"`
 	Channels []struct {
 		ID         string `json:"id"`
 		Name       string `json:"name"`
@@ -111,7 +113,7 @@ func (s *SlackChannelsService) listChannelsPage(ctx context.Context, botToken, c
 		if payload.Error == "" {
 			payload.Error = "conversations.list failed"
 		}
-		return nil, "", fmt.Errorf("slack api error: %s", payload.Error)
+		return nil, "", fmt.Errorf("slack api error: %s%s", payload.Error, slackScopeHint(payload.Needed, payload.Provided))
 	}
 
 	channels := make([]SlackChannel, 0, len(payload.Channels))

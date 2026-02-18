@@ -52,6 +52,7 @@ API startup also applies migrations when `MIGRATIONS_AUTO_APPLY=true`.
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
 - `GET /api/workspaces/:workspaceID/slack/channels`
+- `POST /api/workspaces/:workspaceID/onboarding/dm`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
 

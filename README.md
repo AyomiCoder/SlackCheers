@@ -70,6 +70,7 @@ On API boot (`cmd/api`), migrations run automatically when `MIGRATIONS_AUTO_APPL
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
 - `GET /api/workspaces/:workspaceID/slack/channels`
+- `POST /api/workspaces/:workspaceID/onboarding/dm`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
 
@@ -87,7 +88,7 @@ Then run the API and open:
 
 ## Notes
 
-- Celebration message posting still uses a no-op Slack client in `internal/slack`; OAuth install, callback, events verification, and channel discovery endpoints call Slack APIs directly.
+- Slack API is used for OAuth install/callback, events verification, channel discovery, onboarding DMs, and celebration posting.
 - Scheduler uses exact day matching for weekends (no weekend carry-forward), matching MVP scope.
 
 See docs:

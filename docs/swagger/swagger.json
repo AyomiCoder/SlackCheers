@@ -210,6 +210,53 @@
                 }
             }
         },
+        "/api/workspaces/{workspaceID}/onboarding/dm": {
+            "post": {
+                "description": "Sends one onboarding DM per member (once only), asking for birthday and work start date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboarding"
+                ],
+                "summary": "Send onboarding DMs to workspace members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.OnboardingDMDispatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/workspaces/{workspaceID}/overview": {
             "get": {
                 "description": "Returns upcoming birthdays and/or anniversaries for a workspace.",
@@ -641,6 +688,35 @@
             "properties": {
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.OnboardingDMDispatchResponse": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "failed_details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "failed_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sent": {
+                    "type": "integer"
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "total_members": {
+                    "type": "integer"
                 }
             }
         },
