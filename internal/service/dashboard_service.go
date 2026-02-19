@@ -2,8 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"slackcheers/internal/domain"
@@ -13,14 +17,42 @@ import (
 type DashboardService struct {
 	workspaceRepo *repository.WorkspaceRepository
 	peopleRepo    *repository.PeopleRepository
+	httpClient    *http.Client
 }
 
 func NewDashboardService(workspaceRepo *repository.WorkspaceRepository, peopleRepo *repository.PeopleRepository) *DashboardService {
-	return &DashboardService{workspaceRepo: workspaceRepo, peopleRepo: peopleRepo}
+	return &DashboardService{
+		workspaceRepo: workspaceRepo,
+		peopleRepo:    peopleRepo,
+		httpClient: &http.Client{
+			Timeout: 12 * time.Second,
+		},
+	}
 }
 
 func (s *DashboardService) ListPeople(ctx context.Context, workspaceID string) ([]domain.Person, error) {
-	return s.peopleRepo.ListByWorkspace(ctx, workspaceID)
+	existing, err := s.peopleRepo.ListByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	install, err := s.workspaceRepo.GetSlackInstallationByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	if strings.TrimSpace(install.BotToken) == "" {
+		return existing, nil
+	}
+
+	members, err := s.listWorkspaceMembers(ctx, install.BotToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergePeopleWithWorkspaceMembers(existing, members, workspaceID), nil
 }
 
 func (s *DashboardService) UpsertPerson(ctx context.Context, in repository.UpsertPersonInput) (domain.Person, error) {
@@ -133,4 +165,145 @@ func nextOccurrence(from time.Time, month, day int) time.Time {
 		candidate = candidate.AddDate(1, 0, 0)
 	}
 	return candidate
+}
+
+type dashboardWorkspaceMember struct {
+	ID          string
+	Handle      string
+	DisplayName string
+	AvatarURL   string
+}
+
+func (s *DashboardService) listWorkspaceMembers(ctx context.Context, botToken string) ([]dashboardWorkspaceMember, error) {
+	members := make([]dashboardWorkspaceMember, 0)
+	cursor := ""
+
+	for page := 0; page < 10; page++ {
+		pageMembers, nextCursor, err := s.listUsersPage(ctx, botToken, cursor)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, pageMembers...)
+		if strings.TrimSpace(nextCursor) == "" {
+			break
+		}
+		cursor = nextCursor
+	}
+
+	return members, nil
+}
+
+func (s *DashboardService) listUsersPage(ctx context.Context, botToken, cursor string) ([]dashboardWorkspaceMember, string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, slackUsersListURL, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("build users.list request: %w", err)
+	}
+
+	q := req.URL.Query()
+	q.Set("limit", "200")
+	if strings.TrimSpace(cursor) != "" {
+		q.Set("cursor", cursor)
+	}
+	req.URL.RawQuery = q.Encode()
+	req.Header.Set("Authorization", "Bearer "+botToken)
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("call users.list: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var payload slackUsersListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, "", fmt.Errorf("decode users.list response: %w", err)
+	}
+	if !payload.OK {
+		if payload.Error == "" {
+			payload.Error = "users.list failed"
+		}
+		return nil, "", fmt.Errorf("slack api error: %s%s", payload.Error, slackScopeHint(payload.Needed, payload.Provided))
+	}
+
+	members := make([]dashboardWorkspaceMember, 0, len(payload.Members))
+	for _, m := range payload.Members {
+		if m.ID == "" || m.Deleted || m.IsBot || m.IsAppUser || m.ID == "USLACKBOT" || strings.EqualFold(strings.TrimSpace(m.Name), "slackbot") {
+			continue
+		}
+
+		displayName := strings.TrimSpace(m.Profile.DisplayName)
+		if displayName == "" {
+			displayName = strings.TrimSpace(m.Profile.RealName)
+		}
+		if displayName == "" {
+			displayName = strings.TrimSpace(m.Name)
+		}
+
+		members = append(members, dashboardWorkspaceMember{
+			ID:          strings.TrimSpace(m.ID),
+			Handle:      strings.TrimSpace(m.Name),
+			DisplayName: displayName,
+			AvatarURL:   strings.TrimSpace(m.Profile.Image192),
+		})
+	}
+
+	return members, payload.ResponseMetadata.NextCursor, nil
+}
+
+func mergePeopleWithWorkspaceMembers(existing []domain.Person, members []dashboardWorkspaceMember, workspaceID string) []domain.Person {
+	byUserID := make(map[string]domain.Person, len(existing))
+	for _, p := range existing {
+		byUserID[p.SlackUserID] = p
+	}
+
+	merged := make([]domain.Person, 0, len(existing)+len(members))
+	for _, m := range members {
+		if p, ok := byUserID[m.ID]; ok {
+			if strings.TrimSpace(p.SlackHandle) == "" {
+				p.SlackHandle = m.Handle
+			}
+			if strings.TrimSpace(p.DisplayName) == "" {
+				p.DisplayName = m.DisplayName
+			}
+			if strings.TrimSpace(p.AvatarURL) == "" {
+				p.AvatarURL = m.AvatarURL
+			}
+			if p.WorkspaceID == "" {
+				p.WorkspaceID = workspaceID
+			}
+			if strings.TrimSpace(p.RemindersMode) == "" {
+				p.RemindersMode = "same_day"
+			}
+			merged = append(merged, p)
+			delete(byUserID, m.ID)
+			continue
+		}
+
+		merged = append(merged, domain.Person{
+			WorkspaceID:            workspaceID,
+			SlackUserID:            m.ID,
+			SlackHandle:            m.Handle,
+			DisplayName:            m.DisplayName,
+			AvatarURL:              m.AvatarURL,
+			PublicCelebrationOptIn: true,
+			RemindersMode:          "same_day",
+		})
+	}
+
+	for _, p := range byUserID {
+		if strings.TrimSpace(p.RemindersMode) == "" {
+			p.RemindersMode = "same_day"
+		}
+		merged = append(merged, p)
+	}
+
+	sort.Slice(merged, func(i, j int) bool {
+		left := strings.ToLower(strings.TrimSpace(fallbackString(merged[i].DisplayName, merged[i].SlackHandle, merged[i].SlackUserID)))
+		right := strings.ToLower(strings.TrimSpace(fallbackString(merged[j].DisplayName, merged[j].SlackHandle, merged[j].SlackUserID)))
+		if left == right {
+			return strings.ToLower(merged[i].SlackUserID) < strings.ToLower(merged[j].SlackUserID)
+		}
+		return left < right
+	})
+
+	return merged
 }

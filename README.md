@@ -71,6 +71,7 @@ On API boot (`cmd/api`), migrations run automatically when `MIGRATIONS_AUTO_APPL
 - `GET /api/workspaces/:workspaceID/channels`
 - `GET /api/workspaces/:workspaceID/slack/channels`
 - `POST /api/workspaces/:workspaceID/onboarding/dm`
+- `POST /api/workspaces/:workspaceID/onboarding/dm/cleanup?user_id=U123`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
 
@@ -89,6 +90,12 @@ Then run the API and open:
 ## Notes
 
 - Slack API is used for OAuth install/callback, events verification, channel discovery, onboarding DMs, and celebration posting.
+- Team members can reply in bot DM with one or both lines to save data:
+  ```text
+  march 25
+  january 23, 2024
+  ```
+  `month day` saves birthday, `month day, year` saves hire date (year required).
 - Scheduler uses exact day matching for weekends (no weekend carry-forward), matching MVP scope.
 
 See docs:

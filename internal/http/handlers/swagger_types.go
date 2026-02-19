@@ -84,9 +84,11 @@ type SlackConnectResponse struct {
 }
 
 type SlackEventEnvelope struct {
-	Type      string `json:"type"`
-	Token     string `json:"token"`
-	Challenge string `json:"challenge"`
+	Type      string         `json:"type"`
+	Token     string         `json:"token"`
+	TeamID    string         `json:"team_id"`
+	Challenge string         `json:"challenge"`
+	Event     map[string]any `json:"event"`
 }
 
 type SlackEventAckResponse struct {
@@ -110,5 +112,16 @@ type OnboardingDMDispatchResponse struct {
 	Skipped       int               `json:"skipped"`
 	Failed        int               `json:"failed"`
 	FailedUsers   []string          `json:"failed_users"`
+	FailedDetails map[string]string `json:"failed_details"`
+}
+
+type DMCleanupResponse struct {
+	UserID        string            `json:"user_id"`
+	ChannelID     string            `json:"channel_id"`
+	TotalMessages int               `json:"total_messages"`
+	BotMessages   int               `json:"bot_messages"`
+	Deleted       int               `json:"deleted"`
+	Failed        int               `json:"failed"`
+	FailedTS      []string          `json:"failed_ts"`
 	FailedDetails map[string]string `json:"failed_details"`
 }

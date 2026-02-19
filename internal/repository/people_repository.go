@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -61,6 +62,27 @@ ORDER BY display_name
 	}
 
 	return people, nil
+}
+
+func (r *PeopleRepository) GetByWorkspaceAndSlackUserID(ctx context.Context, workspaceID, slackUserID string) (domain.Person, error) {
+	const q = `
+SELECT id, workspace_id, slack_user_id, slack_handle, display_name, avatar_url,
+       birthday_day, birthday_month, birthday_year,
+       hire_date, public_celebration_opt_in, reminders_mode, created_at, updated_at
+FROM people
+WHERE workspace_id = $1 AND slack_user_id = $2
+`
+
+	row := r.db.QueryRowContext(ctx, q, workspaceID, slackUserID)
+	person, err := scanPerson(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Person{}, ErrNotFound
+		}
+		return domain.Person{}, fmt.Errorf("get person by workspace and slack user id: %w", err)
+	}
+
+	return person, nil
 }
 
 func (r *PeopleRepository) Upsert(ctx context.Context, in UpsertPersonInput) (domain.Person, error) {

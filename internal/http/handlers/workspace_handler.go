@@ -16,6 +16,7 @@ import (
 type WorkspaceHandler struct {
 	dashboardSvc  *service.DashboardService
 	onboardingSvc *service.SlackOnboardingService
+	dmCleanupSvc  *service.SlackDMCleanupService
 	slackChannels *service.SlackChannelsService
 	workspaceRepo *repository.WorkspaceRepository
 }
@@ -23,12 +24,14 @@ type WorkspaceHandler struct {
 func NewWorkspaceHandler(
 	dashboardSvc *service.DashboardService,
 	onboardingSvc *service.SlackOnboardingService,
+	dmCleanupSvc *service.SlackDMCleanupService,
 	slackChannels *service.SlackChannelsService,
 	workspaceRepo *repository.WorkspaceRepository,
 ) *WorkspaceHandler {
 	return &WorkspaceHandler{
 		dashboardSvc:  dashboardSvc,
 		onboardingSvc: onboardingSvc,
+		dmCleanupSvc:  dmCleanupSvc,
 		slackChannels: slackChannels,
 		workspaceRepo: workspaceRepo,
 	}
@@ -125,12 +128,23 @@ func (h *WorkspaceHandler) Overview(c *gin.Context) {
 // @Produce json
 // @Param workspaceID path string true "Workspace ID"
 // @Success 200 {object} PeopleResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/workspaces/{workspaceID}/people [get]
 func (h *WorkspaceHandler) ListPeople(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
 	people, err := h.dashboardSvc.ListPeople(c.Request.Context(), workspaceID)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "not connected") || strings.Contains(msg, "slack api error") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -230,6 +244,7 @@ func (h *WorkspaceHandler) ListChannels(c *gin.Context) {
 // @Tags onboarding
 // @Produce json
 // @Param workspaceID path string true "Workspace ID"
+// @Param force query bool false "Set true to resend DMs to everyone, including previously messaged users"
 // @Success 200 {object} OnboardingDMDispatchResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 400 {object} ErrorResponse
@@ -237,7 +252,8 @@ func (h *WorkspaceHandler) ListChannels(c *gin.Context) {
 // @Router /api/workspaces/{workspaceID}/onboarding/dm [post]
 func (h *WorkspaceHandler) SendOnboardingDMs(c *gin.Context) {
 	workspaceID := c.Param("workspaceID")
-	result, err := h.onboardingSvc.SendOnboardingDMs(c.Request.Context(), workspaceID)
+	force := strings.EqualFold(strings.TrimSpace(c.Query("force")), "true")
+	result, err := h.onboardingSvc.SendOnboardingDMs(c.Request.Context(), workspaceID, force)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
@@ -258,6 +274,58 @@ func (h *WorkspaceHandler) SendOnboardingDMs(c *gin.Context) {
 		Skipped:       result.Skipped,
 		Failed:        result.Failed,
 		FailedUsers:   result.FailedUsers,
+		FailedDetails: result.FailedDetails,
+	})
+}
+
+// CleanupOnboardingDMs godoc
+// @Summary Delete bot-authored DM history for a user
+// @Description Deletes past messages authored by SlackCheers bot in the DM with the selected user.
+// @Tags onboarding
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param user_id query string true "Slack User ID"
+// @Success 200 {object} DMCleanupResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/onboarding/dm/cleanup [post]
+func (h *WorkspaceHandler) CleanupOnboardingDMs(c *gin.Context) {
+	workspaceID := c.Param("workspaceID")
+	userID := strings.TrimSpace(c.Query("user_id"))
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+
+	if h.dmCleanupSvc == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "dm cleanup service is not configured"})
+		return
+	}
+
+	result, err := h.dmCleanupSvc.CleanupBotDirectMessages(c.Request.Context(), workspaceID, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "not connected") || strings.Contains(msg, "slack api error") || strings.Contains(msg, "required") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, DMCleanupResponse{
+		UserID:        result.UserID,
+		ChannelID:     result.ChannelID,
+		TotalMessages: result.TotalMessages,
+		BotMessages:   result.BotMessages,
+		Deleted:       result.Deleted,
+		Failed:        result.Failed,
+		FailedTS:      result.FailedTS,
 		FailedDetails: result.FailedDetails,
 	})
 }

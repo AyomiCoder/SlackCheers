@@ -37,6 +37,7 @@ func NewRouter(deps RouterDependencies) *gin.Engine {
 		api.GET("/workspaces/:workspaceID/channels", deps.WorkspaceHandler.ListChannels)
 		api.GET("/workspaces/:workspaceID/slack/channels", deps.WorkspaceHandler.ListSlackChannels)
 		api.POST("/workspaces/:workspaceID/onboarding/dm", deps.WorkspaceHandler.SendOnboardingDMs)
+		api.POST("/workspaces/:workspaceID/onboarding/dm/cleanup", deps.WorkspaceHandler.CleanupOnboardingDMs)
 		api.PUT("/workspaces/:workspaceID/channels/:channelID/settings", deps.WorkspaceHandler.UpdateChannelSettings)
 		api.PUT("/workspaces/:workspaceID/channels/:channelID/templates", deps.WorkspaceHandler.UpdateChannelTemplates)
 	}

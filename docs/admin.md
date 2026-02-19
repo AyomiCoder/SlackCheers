@@ -20,7 +20,15 @@ Each person can provide:
 - Work start date
 - Public celebration preference
 
-People can later update their details through the Slack app settings flow.
+People can reply directly to the bot DM with one or both lines:
+```text
+march 25
+january 23, 2024
+```
+
+`month day` saves birthday. `month day, year` saves hire date (year required).
+
+People can later update their details by sending another DM in the same format.
 
 ## Privacy and visibility
 

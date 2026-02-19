@@ -48,6 +48,7 @@ type slackUsersListResponse struct {
 		Profile   struct {
 			DisplayName string `json:"display_name"`
 			RealName    string `json:"real_name"`
+			Image192    string `json:"image_192"`
 		} `json:"profile"`
 	} `json:"members"`
 	ResponseMetadata struct {
@@ -87,7 +88,7 @@ func NewSlackOnboardingService(workspaceRepo *repository.WorkspaceRepository, on
 	}
 }
 
-func (s *SlackOnboardingService) SendOnboardingDMs(ctx context.Context, workspaceID string) (OnboardingDispatchResult, error) {
+func (s *SlackOnboardingService) SendOnboardingDMs(ctx context.Context, workspaceID string, force bool) (OnboardingDispatchResult, error) {
 	install, err := s.workspaceRepo.GetSlackInstallationByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return OnboardingDispatchResult{}, err
@@ -101,9 +102,12 @@ func (s *SlackOnboardingService) SendOnboardingDMs(ctx context.Context, workspac
 		return OnboardingDispatchResult{}, err
 	}
 
-	sentUsers, err := s.onboardingRepo.ListSentUserIDs(ctx, workspaceID)
-	if err != nil {
-		return OnboardingDispatchResult{}, err
+	sentUsers := map[string]struct{}{}
+	if !force {
+		sentUsers, err = s.onboardingRepo.ListSentUserIDs(ctx, workspaceID)
+		if err != nil {
+			return OnboardingDispatchResult{}, err
+		}
 	}
 
 	result := OnboardingDispatchResult{
@@ -281,12 +285,14 @@ func (s *SlackOnboardingService) openDMChannel(ctx context.Context, botToken, us
 }
 
 func buildOnboardingMessage(name string) string {
-	if strings.TrimSpace(name) == "" {
-		name = "there"
+	cleanName := strings.TrimSpace(name)
+	cleanName = strings.TrimRight(cleanName, ".!?,")
+	if cleanName == "" {
+		cleanName = "there"
 	}
 
 	return fmt.Sprintf(
-		"Hi %s! SlackCheers is now active in your workspace. Please share your birthday (DD/MM, year optional) and work start date (YYYY-MM-DD) with your admin so they can add your profile.",
-		name,
+		"Hi %s!\n\nSlackCheers is now active in your workspace to celebrate great moments.\n\nTell us your birthday: `month day` and hire date: `month day, year`\n\nYou can send only birthday or only hire date, and update later anytime.",
+		cleanName,
 	)
 }

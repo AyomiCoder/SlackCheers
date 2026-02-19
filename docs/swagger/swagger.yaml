@@ -36,6 +36,29 @@ definitions:
           $ref: '#/definitions/slackcheers_internal_domain.WorkspaceChannel'
         type: array
     type: object
+  internal_http_handlers.DMCleanupResponse:
+    properties:
+      bot_messages:
+        type: integer
+      channel_id:
+        type: string
+      deleted:
+        type: integer
+      failed:
+        type: integer
+      failed_details:
+        additionalProperties:
+          type: string
+        type: object
+      failed_ts:
+        items:
+          type: string
+        type: array
+      total_messages:
+        type: integer
+      user_id:
+        type: string
+    type: object
   internal_http_handlers.ErrorResponse:
     properties:
       error:
@@ -112,6 +135,11 @@ definitions:
   internal_http_handlers.SlackEventEnvelope:
     properties:
       challenge:
+        type: string
+      event:
+        additionalProperties: {}
+        type: object
+      team_id:
         type: string
       token:
         type: string
@@ -403,6 +431,11 @@ paths:
         name: workspaceID
         required: true
         type: string
+      - description: Set true to resend DMs to everyone, including previously messaged
+          users
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
@@ -423,6 +456,43 @@ paths:
           schema:
             $ref: '#/definitions/internal_http_handlers.ErrorResponse'
       summary: Send onboarding DMs to workspace members
+      tags:
+      - onboarding
+  /api/workspaces/{workspaceID}/onboarding/dm/cleanup:
+    post:
+      description: Deletes past messages authored by SlackCheers bot in the DM with
+        the selected user.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Slack User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.DMCleanupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Delete bot-authored DM history for a user
       tags:
       - onboarding
   /api/workspaces/{workspaceID}/overview:
@@ -475,6 +545,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/internal_http_handlers.PeopleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -666,7 +744,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verifies Slack signatures and handles URL verification challenge.
+      description: Verifies Slack signatures, handles URL verification, and processes
+        DM replies to save birthdays/hire dates.
       parameters:
       - description: Slack event payload
         in: body

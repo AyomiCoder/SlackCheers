@@ -59,13 +59,15 @@ func New(ctx context.Context) (*App, error) {
 
 	celebrationSvc := service.NewCelebrationService(workspaceRepo, peopleRepo, slackClient, logger)
 	dashboardSvc := service.NewDashboardService(workspaceRepo, peopleRepo)
+	inboundSvc := service.NewSlackInboundService(workspaceRepo, peopleRepo, slackClient, logger)
 	onboardingSvc := service.NewSlackOnboardingService(workspaceRepo, onboardingRepo)
+	dmCleanupSvc := service.NewSlackDMCleanupService(workspaceRepo)
 	slackChannelsSvc := service.NewSlackChannelsService(workspaceRepo)
 	authSvc := service.NewSlackAuthService(cfg.Slack, workspaceRepo)
 
 	healthHandler := handlers.NewHealthHandler()
-	authHandler := handlers.NewAuthHandler(authSvc, cfg.Slack.SigningSecret)
-	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, onboardingSvc, slackChannelsSvc, workspaceRepo)
+	authHandler := handlers.NewAuthHandler(authSvc, inboundSvc, cfg.Slack.SigningSecret)
+	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, onboardingSvc, dmCleanupSvc, slackChannelsSvc, workspaceRepo)
 
 	router := apphttp.NewRouter(apphttp.RouterDependencies{
 		Logger:           logger,

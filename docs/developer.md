@@ -25,6 +25,7 @@ Core values:
 - `SLACK_CLIENT_ID`
 - `SLACK_CLIENT_SECRET`
 - `SLACK_REDIRECT_URL`
+- `SLACK_BOT_SCOPES` (include `chat:write,channels:read,users:read,im:write,im:history`)
 - `SLACK_BOT_TOKEN`
 - `SLACK_SIGNING_SECRET`
 
@@ -53,8 +54,20 @@ API startup also applies migrations when `MIGRATIONS_AUTO_APPLY=true`.
 - `GET /api/workspaces/:workspaceID/channels`
 - `GET /api/workspaces/:workspaceID/slack/channels`
 - `POST /api/workspaces/:workspaceID/onboarding/dm`
+- `POST /api/workspaces/:workspaceID/onboarding/dm/cleanup?user_id=U123`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/settings`
 - `PUT /api/workspaces/:workspaceID/channels/:channelID/templates`
+
+## Slack event reply format
+
+- Team members can DM the bot with one or both lines:
+```text
+march 25
+january 23, 2024
+```
+- `month day` saves birthday.
+- `month day, year` saves hire date (year required).
+- Event Subscriptions should include `message.im` and point to `/slack/events`.
 
 ## Engineering principles used
 

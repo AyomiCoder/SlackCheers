@@ -17,12 +17,21 @@ import (
 )
 
 type AuthHandler struct {
-	authService   *service.SlackAuthService
-	signingSecret string
+	authService    *service.SlackAuthService
+	inboundService *service.SlackInboundService
+	signingSecret  string
 }
 
-func NewAuthHandler(authService *service.SlackAuthService, signingSecret string) *AuthHandler {
-	return &AuthHandler{authService: authService, signingSecret: strings.TrimSpace(signingSecret)}
+func NewAuthHandler(
+	authService *service.SlackAuthService,
+	inboundService *service.SlackInboundService,
+	signingSecret string,
+) *AuthHandler {
+	return &AuthHandler{
+		authService:    authService,
+		inboundService: inboundService,
+		signingSecret:  strings.TrimSpace(signingSecret),
+	}
 }
 
 // SlackInstall godoc
@@ -99,7 +108,7 @@ func (h *AuthHandler) SlackOAuthCallback(c *gin.Context) {
 
 // SlackEvents godoc
 // @Summary Slack events webhook
-// @Description Verifies Slack signatures and handles URL verification challenge.
+// @Description Verifies Slack signatures, handles URL verification, and processes DM replies to save birthdays/hire dates.
 // @Tags slack
 // @Accept json
 // @Produce json
@@ -137,6 +146,10 @@ func (h *AuthHandler) SlackEvents(c *gin.Context) {
 	if payload.Type == "url_verification" {
 		c.JSON(http.StatusOK, SlackEventAckResponse{Challenge: payload.Challenge})
 		return
+	}
+
+	if h.inboundService != nil {
+		_ = h.inboundService.ProcessEvent(c.Request.Context(), body)
 	}
 
 	c.JSON(http.StatusOK, SlackEventAckResponse{OK: true})

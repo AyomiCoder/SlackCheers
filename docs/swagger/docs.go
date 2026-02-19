@@ -230,6 +230,12 @@ const docTemplate = `{
                         "name": "workspaceID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Set true to resend DMs to everyone, including previously messaged users",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -237,6 +243,60 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/internal_http_handlers.OnboardingDMDispatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/onboarding/dm/cleanup": {
+            "post": {
+                "description": "Deletes past messages authored by SlackCheers bot in the DM with the selected user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboarding"
+                ],
+                "summary": "Delete bot-authored DM history for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Slack User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.DMCleanupResponse"
                         }
                     },
                     "400": {
@@ -336,6 +396,18 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/internal_http_handlers.PeopleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
                         }
                     },
                     "500": {
@@ -573,7 +645,7 @@ const docTemplate = `{
         },
         "/slack/events": {
             "post": {
-                "description": "Verifies Slack signatures and handles URL verification challenge.",
+                "description": "Verifies Slack signatures, handles URL verification, and processes DM replies to save birthdays/hire dates.",
                 "consumes": [
                     "application/json"
                 ],
@@ -675,6 +747,41 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/slackcheers_internal_domain.WorkspaceChannel"
                     }
+                }
+            }
+        },
+        "internal_http_handlers.DMCleanupResponse": {
+            "type": "object",
+            "properties": {
+                "bot_messages": {
+                    "type": "integer"
+                },
+                "channel_id": {
+                    "type": "string"
+                },
+                "deleted": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "failed_details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "failed_ts": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "total_messages": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -796,6 +903,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "challenge": {
+                    "type": "string"
+                },
+                "event": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "team_id": {
                     "type": "string"
                 },
                 "token": {

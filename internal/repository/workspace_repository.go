@@ -17,6 +17,7 @@ type WorkspaceSlackInstallation struct {
 	WorkspaceID string
 	SlackTeamID string
 	BotToken    string
+	BotUserID   string
 }
 
 type SaveSlackInstallationInput struct {
@@ -112,17 +113,35 @@ WHERE id = $1
 
 func (r *WorkspaceRepository) GetSlackInstallationByWorkspaceID(ctx context.Context, workspaceID string) (WorkspaceSlackInstallation, error) {
 	const q = `
-SELECT id, slack_team_id, COALESCE(slack_bot_token, '')
+SELECT id, slack_team_id, COALESCE(slack_bot_token, ''), COALESCE(slack_bot_user_id, '')
 FROM workspaces
 WHERE id = $1
 `
 
 	var out WorkspaceSlackInstallation
-	if err := r.db.QueryRowContext(ctx, q, workspaceID).Scan(&out.WorkspaceID, &out.SlackTeamID, &out.BotToken); err != nil {
+	if err := r.db.QueryRowContext(ctx, q, workspaceID).Scan(&out.WorkspaceID, &out.SlackTeamID, &out.BotToken, &out.BotUserID); err != nil {
 		if err == sql.ErrNoRows {
 			return WorkspaceSlackInstallation{}, ErrNotFound
 		}
 		return WorkspaceSlackInstallation{}, fmt.Errorf("get workspace slack installation: %w", err)
+	}
+
+	return out, nil
+}
+
+func (r *WorkspaceRepository) GetSlackInstallationByTeamID(ctx context.Context, slackTeamID string) (WorkspaceSlackInstallation, error) {
+	const q = `
+SELECT id, slack_team_id, COALESCE(slack_bot_token, ''), COALESCE(slack_bot_user_id, '')
+FROM workspaces
+WHERE slack_team_id = $1
+`
+
+	var out WorkspaceSlackInstallation
+	if err := r.db.QueryRowContext(ctx, q, slackTeamID).Scan(&out.WorkspaceID, &out.SlackTeamID, &out.BotToken, &out.BotUserID); err != nil {
+		if err == sql.ErrNoRows {
+			return WorkspaceSlackInstallation{}, ErrNotFound
+		}
+		return WorkspaceSlackInstallation{}, fmt.Errorf("get workspace slack installation by team id: %w", err)
 	}
 
 	return out, nil
