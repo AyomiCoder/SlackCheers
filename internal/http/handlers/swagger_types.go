@@ -125,3 +125,34 @@ type DMCleanupResponse struct {
 	FailedTS      []string          `json:"failed_ts"`
 	FailedDetails map[string]string `json:"failed_details"`
 }
+
+type ManualCelebrationDispatchResponse struct {
+	WorkspaceID        string                               `json:"workspace_id"`
+	ChannelsProcessed  int                                  `json:"channels_processed"`
+	BirthdayPosts      int                                  `json:"birthday_posts"`
+	AnniversaryPosts   int                                  `json:"anniversary_posts"`
+	ChannelsWithErrors int                                  `json:"channels_with_errors"`
+	ChannelDispatches  []ManualCelebrationChannelDispatches `json:"channel_dispatches"`
+}
+
+type ManualCelebrationChannelDispatches struct {
+	ChannelID         string `json:"channel_id"`
+	SlackChannelID    string `json:"slack_channel_id"`
+	BirthdayCount     int    `json:"birthday_count"`
+	AnniversaryCount  int    `json:"anniversary_count"`
+	BirthdayPosted    bool   `json:"birthday_posted"`
+	AnniversaryPosted bool   `json:"anniversary_posted"`
+	Error             string `json:"error,omitempty"`
+}
+
+type ChannelBirthdayCleanupResponse struct {
+	ChannelID      string            `json:"channel_id"`
+	SlackChannelID string            `json:"slack_channel_id"`
+	Match          string            `json:"match"`
+	Scanned        int               `json:"scanned"`
+	Matched        int               `json:"matched"`
+	Deleted        int               `json:"deleted"`
+	Failed         int               `json:"failed"`
+	FailedTS       []string          `json:"failed_ts"`
+	FailedDetails  map[string]string `json:"failed_details"`
+}

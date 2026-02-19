@@ -65,10 +65,12 @@ On API boot (`cmd/api`), migrations run automatically when `MIGRATIONS_AUTO_APPL
 - `GET /auth/slack/callback`
 - `POST /slack/events`
 - `POST /api/workspaces/bootstrap`
+- `POST /api/workspaces/:workspaceID/dispatch-now`
 - `GET /api/workspaces/:workspaceID/overview?days=30&type=all`
 - `GET /api/workspaces/:workspaceID/people`
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
+- `POST /api/workspaces/:workspaceID/channels/:channelID/cleanup-birthday-messages`
 - `GET /api/workspaces/:workspaceID/slack/channels`
 - `POST /api/workspaces/:workspaceID/onboarding/dm`
 - `POST /api/workspaces/:workspaceID/onboarding/dm/cleanup?user_id=U123`

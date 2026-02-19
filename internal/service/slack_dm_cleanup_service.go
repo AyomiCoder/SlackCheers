@@ -44,6 +44,7 @@ type slackConversationsHistoryResponse struct {
 		User    string `json:"user"`
 		BotID   string `json:"bot_id"`
 		Subtype string `json:"subtype"`
+		Text    string `json:"text"`
 	} `json:"messages"`
 	ResponseMetadata struct {
 		NextCursor string `json:"next_cursor"`
@@ -62,6 +63,7 @@ type slackDMMessage struct {
 	User    string
 	BotID   string
 	Subtype string
+	Text    string
 }
 
 func NewSlackDMCleanupService(workspaceRepo *repository.WorkspaceRepository) *SlackDMCleanupService {
@@ -220,6 +222,7 @@ func (s *SlackDMCleanupService) listDMHistoryPage(ctx context.Context, botToken,
 			User:    strings.TrimSpace(m.User),
 			BotID:   strings.TrimSpace(m.BotID),
 			Subtype: strings.TrimSpace(m.Subtype),
+			Text:    m.Text,
 		})
 	}
 

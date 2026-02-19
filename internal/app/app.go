@@ -62,12 +62,13 @@ func New(ctx context.Context) (*App, error) {
 	inboundSvc := service.NewSlackInboundService(workspaceRepo, peopleRepo, slackClient, logger)
 	onboardingSvc := service.NewSlackOnboardingService(workspaceRepo, onboardingRepo)
 	dmCleanupSvc := service.NewSlackDMCleanupService(workspaceRepo)
+	channelCleanupSvc := service.NewSlackChannelCleanupService(workspaceRepo)
 	slackChannelsSvc := service.NewSlackChannelsService(workspaceRepo)
 	authSvc := service.NewSlackAuthService(cfg.Slack, workspaceRepo)
 
 	healthHandler := handlers.NewHealthHandler()
 	authHandler := handlers.NewAuthHandler(authSvc, inboundSvc, cfg.Slack.SigningSecret)
-	workspaceHandler := handlers.NewWorkspaceHandler(dashboardSvc, onboardingSvc, dmCleanupSvc, slackChannelsSvc, workspaceRepo)
+	workspaceHandler := handlers.NewWorkspaceHandler(celebrationSvc, dashboardSvc, onboardingSvc, dmCleanupSvc, channelCleanupSvc, slackChannelsSvc, workspaceRepo)
 
 	router := apphttp.NewRouter(apphttp.RouterDependencies{
 		Logger:           logger,

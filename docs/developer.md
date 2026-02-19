@@ -25,7 +25,7 @@ Core values:
 - `SLACK_CLIENT_ID`
 - `SLACK_CLIENT_SECRET`
 - `SLACK_REDIRECT_URL`
-- `SLACK_BOT_SCOPES` (include `chat:write,channels:read,users:read,im:write,im:history`)
+- `SLACK_BOT_SCOPES` (include `chat:write,channels:read,channels:join,channels:history,users:read,im:write,im:history`)
 - `SLACK_BOT_TOKEN`
 - `SLACK_SIGNING_SECRET`
 
@@ -48,10 +48,12 @@ API startup also applies migrations when `MIGRATIONS_AUTO_APPLY=true`.
 - `GET /auth/slack/install`
 - `GET /auth/slack/callback`
 - `POST /slack/events`
+- `POST /api/workspaces/:workspaceID/dispatch-now`
 - `GET /api/workspaces/:workspaceID/overview`
 - `GET /api/workspaces/:workspaceID/people`
 - `PUT /api/workspaces/:workspaceID/people/:slackUserID`
 - `GET /api/workspaces/:workspaceID/channels`
+- `POST /api/workspaces/:workspaceID/channels/:channelID/cleanup-birthday-messages`
 - `GET /api/workspaces/:workspaceID/slack/channels`
 - `POST /api/workspaces/:workspaceID/onboarding/dm`
 - `POST /api/workspaces/:workspaceID/onboarding/dm/cleanup?user_id=U123`

@@ -14,27 +14,140 @@ import (
 )
 
 type WorkspaceHandler struct {
-	dashboardSvc  *service.DashboardService
-	onboardingSvc *service.SlackOnboardingService
-	dmCleanupSvc  *service.SlackDMCleanupService
-	slackChannels *service.SlackChannelsService
-	workspaceRepo *repository.WorkspaceRepository
+	celebrationSvc *service.CelebrationService
+	dashboardSvc   *service.DashboardService
+	onboardingSvc  *service.SlackOnboardingService
+	dmCleanupSvc   *service.SlackDMCleanupService
+	channelCleanup *service.SlackChannelCleanupService
+	slackChannels  *service.SlackChannelsService
+	workspaceRepo  *repository.WorkspaceRepository
 }
 
 func NewWorkspaceHandler(
+	celebrationSvc *service.CelebrationService,
 	dashboardSvc *service.DashboardService,
 	onboardingSvc *service.SlackOnboardingService,
 	dmCleanupSvc *service.SlackDMCleanupService,
+	channelCleanup *service.SlackChannelCleanupService,
 	slackChannels *service.SlackChannelsService,
 	workspaceRepo *repository.WorkspaceRepository,
 ) *WorkspaceHandler {
 	return &WorkspaceHandler{
-		dashboardSvc:  dashboardSvc,
-		onboardingSvc: onboardingSvc,
-		dmCleanupSvc:  dmCleanupSvc,
-		slackChannels: slackChannels,
-		workspaceRepo: workspaceRepo,
+		celebrationSvc: celebrationSvc,
+		dashboardSvc:   dashboardSvc,
+		onboardingSvc:  onboardingSvc,
+		dmCleanupSvc:   dmCleanupSvc,
+		channelCleanup: channelCleanup,
+		slackChannels:  slackChannels,
+		workspaceRepo:  workspaceRepo,
 	}
+}
+
+// DispatchCelebrationsNow godoc
+// @Summary Force run celebrations now for a workspace
+// @Description Manually runs birthday and anniversary dispatch now across workspace channels.
+// @Tags workspaces
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Success 200 {object} ManualCelebrationDispatchResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/dispatch-now [post]
+func (h *WorkspaceHandler) DispatchCelebrationsNow(c *gin.Context) {
+	workspaceID := c.Param("workspaceID")
+	if h.celebrationSvc == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "celebration service is not configured"})
+		return
+	}
+
+	result, err := h.celebrationSvc.RunWorkspaceNow(c.Request.Context(), workspaceID, time.Now().UTC())
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "not connected") || strings.Contains(msg, "slack api error") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	dispatches := make([]ManualCelebrationChannelDispatches, 0, len(result.ChannelDispatches))
+	for _, item := range result.ChannelDispatches {
+		dispatches = append(dispatches, ManualCelebrationChannelDispatches{
+			ChannelID:         item.ChannelID,
+			SlackChannelID:    item.SlackChannelID,
+			BirthdayCount:     item.BirthdayCount,
+			AnniversaryCount:  item.AnniversaryCount,
+			BirthdayPosted:    item.BirthdayPosted,
+			AnniversaryPosted: item.AnniversaryPosted,
+			Error:             item.Error,
+		})
+	}
+
+	c.JSON(http.StatusOK, ManualCelebrationDispatchResponse{
+		WorkspaceID:        result.WorkspaceID,
+		ChannelsProcessed:  result.ChannelsProcessed,
+		BirthdayPosts:      result.BirthdayPosts,
+		AnniversaryPosts:   result.AnniversaryPosts,
+		ChannelsWithErrors: result.ChannelsWithErrors,
+		ChannelDispatches:  dispatches,
+	})
+}
+
+// CleanupBirthdayMessages godoc
+// @Summary Delete bot birthday messages in a channel
+// @Description Deletes bot-authored channel messages matching text (default: happy birthday).
+// @Tags channels
+// @Produce json
+// @Param workspaceID path string true "Workspace ID"
+// @Param channelID path string true "Channel UUID or Slack Channel ID"
+// @Param match query string false "Case-insensitive text to match (default: happy birthday)"
+// @Success 200 {object} ChannelBirthdayCleanupResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/workspaces/{workspaceID}/channels/{channelID}/cleanup-birthday-messages [post]
+func (h *WorkspaceHandler) CleanupBirthdayMessages(c *gin.Context) {
+	workspaceID := c.Param("workspaceID")
+	channelID := c.Param("channelID")
+	match := strings.TrimSpace(c.Query("match"))
+
+	if h.channelCleanup == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "channel cleanup service is not configured"})
+		return
+	}
+
+	result, err := h.channelCleanup.CleanupBirthdayMessages(c.Request.Context(), workspaceID, channelID, match)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "not connected") || strings.Contains(msg, "slack api error") || strings.Contains(msg, "required") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ChannelBirthdayCleanupResponse{
+		ChannelID:      result.ChannelID,
+		SlackChannelID: result.SlackChannelID,
+		Match:          result.Match,
+		Scanned:        result.Scanned,
+		Matched:        result.Matched,
+		Deleted:        result.Deleted,
+		Failed:         result.Failed,
+		FailedTS:       result.FailedTS,
+		FailedDetails:  result.FailedDetails,
+	})
 }
 
 // BootstrapWorkspace godoc

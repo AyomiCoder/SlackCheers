@@ -31,10 +31,12 @@ func NewRouter(deps RouterDependencies) *gin.Engine {
 	api := r.Group("/api")
 	{
 		api.POST("/workspaces/bootstrap", deps.WorkspaceHandler.BootstrapWorkspace)
+		api.POST("/workspaces/:workspaceID/dispatch-now", deps.WorkspaceHandler.DispatchCelebrationsNow)
 		api.GET("/workspaces/:workspaceID/overview", deps.WorkspaceHandler.Overview)
 		api.GET("/workspaces/:workspaceID/people", deps.WorkspaceHandler.ListPeople)
 		api.PUT("/workspaces/:workspaceID/people/:slackUserID", deps.WorkspaceHandler.UpsertPerson)
 		api.GET("/workspaces/:workspaceID/channels", deps.WorkspaceHandler.ListChannels)
+		api.POST("/workspaces/:workspaceID/channels/:channelID/cleanup-birthday-messages", deps.WorkspaceHandler.CleanupBirthdayMessages)
 		api.GET("/workspaces/:workspaceID/slack/channels", deps.WorkspaceHandler.ListSlackChannels)
 		api.POST("/workspaces/:workspaceID/onboarding/dm", deps.WorkspaceHandler.SendOnboardingDMs)
 		api.POST("/workspaces/:workspaceID/onboarding/dm/cleanup", deps.WorkspaceHandler.CleanupOnboardingDMs)

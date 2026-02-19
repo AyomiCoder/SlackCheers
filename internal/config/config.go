@@ -79,7 +79,7 @@ func Load() (Config, error) {
 			ClientID:      strings.TrimSpace(os.Getenv("SLACK_CLIENT_ID")),
 			ClientSecret:  strings.TrimSpace(os.Getenv("SLACK_CLIENT_SECRET")),
 			RedirectURL:   strings.TrimSpace(os.Getenv("SLACK_REDIRECT_URL")),
-			BotScopes:     getEnv("SLACK_BOT_SCOPES", "chat:write,channels:read,users:read,im:write,im:history"),
+			BotScopes:     getEnv("SLACK_BOT_SCOPES", "chat:write,channels:read,channels:join,channels:history,users:read,im:write,im:history"),
 			UserScopes:    strings.TrimSpace(os.Getenv("SLACK_USER_SCOPES")),
 			BotToken:      strings.TrimSpace(os.Getenv("SLACK_BOT_TOKEN")),
 			SigningSecret: strings.TrimSpace(os.Getenv("SLACK_SIGNING_SECRET")),

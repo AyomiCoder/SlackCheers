@@ -29,6 +29,31 @@ definitions:
       workspace:
         $ref: '#/definitions/slackcheers_internal_domain.Workspace'
     type: object
+  internal_http_handlers.ChannelBirthdayCleanupResponse:
+    properties:
+      channel_id:
+        type: string
+      deleted:
+        type: integer
+      failed:
+        type: integer
+      failed_details:
+        additionalProperties:
+          type: string
+        type: object
+      failed_ts:
+        items:
+          type: string
+        type: array
+      match:
+        type: string
+      matched:
+        type: integer
+      scanned:
+        type: integer
+      slack_channel_id:
+        type: string
+    type: object
   internal_http_handlers.ChannelsResponse:
     properties:
       channels:
@@ -67,6 +92,40 @@ definitions:
   internal_http_handlers.HealthResponse:
     properties:
       status:
+        type: string
+    type: object
+  internal_http_handlers.ManualCelebrationChannelDispatches:
+    properties:
+      anniversary_count:
+        type: integer
+      anniversary_posted:
+        type: boolean
+      birthday_count:
+        type: integer
+      birthday_posted:
+        type: boolean
+      channel_id:
+        type: string
+      error:
+        type: string
+      slack_channel_id:
+        type: string
+    type: object
+  internal_http_handlers.ManualCelebrationDispatchResponse:
+    properties:
+      anniversary_posts:
+        type: integer
+      birthday_posts:
+        type: integer
+      channel_dispatches:
+        items:
+          $ref: '#/definitions/internal_http_handlers.ManualCelebrationChannelDispatches'
+        type: array
+      channels_processed:
+        type: integer
+      channels_with_errors:
+        type: integer
+      workspace_id:
         type: string
     type: object
   internal_http_handlers.OnboardingDMDispatchResponse:
@@ -343,6 +402,47 @@ paths:
       summary: List workspace channels
       tags:
       - channels
+  /api/workspaces/{workspaceID}/channels/{channelID}/cleanup-birthday-messages:
+    post:
+      description: 'Deletes bot-authored channel messages matching text (default:
+        happy birthday).'
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Channel UUID or Slack Channel ID
+        in: path
+        name: channelID
+        required: true
+        type: string
+      - description: 'Case-insensitive text to match (default: happy birthday)'
+        in: query
+        name: match
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ChannelBirthdayCleanupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Delete bot birthday messages in a channel
+      tags:
+      - channels
   /api/workspaces/{workspaceID}/channels/{channelID}/settings:
     put:
       consumes:
@@ -421,6 +521,38 @@ paths:
       summary: Update channel templates
       tags:
       - channels
+  /api/workspaces/{workspaceID}/dispatch-now:
+    post:
+      description: Manually runs birthday and anniversary dispatch now across workspace
+        channels.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ManualCelebrationDispatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_http_handlers.ErrorResponse'
+      summary: Force run celebrations now for a workspace
+      tags:
+      - workspaces
   /api/workspaces/{workspaceID}/onboarding/dm:
     post:
       description: Sends one onboarding DM per member (once only), asking for birthday

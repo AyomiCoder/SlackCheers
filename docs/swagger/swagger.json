@@ -92,6 +92,66 @@
                 }
             }
         },
+        "/api/workspaces/{workspaceID}/channels/{channelID}/cleanup-birthday-messages": {
+            "post": {
+                "description": "Deletes bot-authored channel messages matching text (default: happy birthday).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Delete bot birthday messages in a channel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel UUID or Slack Channel ID",
+                        "name": "channelID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Case-insensitive text to match (default: happy birthday)",
+                        "name": "match",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ChannelBirthdayCleanupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/workspaces/{workspaceID}/channels/{channelID}/settings": {
             "put": {
                 "consumes": [
@@ -203,6 +263,53 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workspaces/{workspaceID}/dispatch-now": {
+            "post": {
+                "description": "Manually runs birthday and anniversary dispatch now across workspace channels.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspaces"
+                ],
+                "summary": "Force run celebrations now for a workspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ManualCelebrationDispatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/internal_http_handlers.ErrorResponse"
                         }
@@ -736,6 +843,44 @@
                 }
             }
         },
+        "internal_http_handlers.ChannelBirthdayCleanupResponse": {
+            "type": "object",
+            "properties": {
+                "channel_id": {
+                    "type": "string"
+                },
+                "deleted": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "failed_details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "failed_ts": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "match": {
+                    "type": "string"
+                },
+                "matched": {
+                    "type": "integer"
+                },
+                "scanned": {
+                    "type": "integer"
+                },
+                "slack_channel_id": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_http_handlers.ChannelsResponse": {
             "type": "object",
             "properties": {
@@ -794,6 +939,58 @@
             "type": "object",
             "properties": {
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.ManualCelebrationChannelDispatches": {
+            "type": "object",
+            "properties": {
+                "anniversary_count": {
+                    "type": "integer"
+                },
+                "anniversary_posted": {
+                    "type": "boolean"
+                },
+                "birthday_count": {
+                    "type": "integer"
+                },
+                "birthday_posted": {
+                    "type": "boolean"
+                },
+                "channel_id": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "slack_channel_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.ManualCelebrationDispatchResponse": {
+            "type": "object",
+            "properties": {
+                "anniversary_posts": {
+                    "type": "integer"
+                },
+                "birthday_posts": {
+                    "type": "integer"
+                },
+                "channel_dispatches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_http_handlers.ManualCelebrationChannelDispatches"
+                    }
+                },
+                "channels_processed": {
+                    "type": "integer"
+                },
+                "channels_with_errors": {
+                    "type": "integer"
+                },
+                "workspace_id": {
                     "type": "string"
                 }
             }

@@ -17,6 +17,7 @@ import (
 const (
 	slackChatPostMessageURL   = "https://slack.com/api/chat.postMessage"
 	slackConversationsOpenURL = "https://slack.com/api/conversations.open"
+	slackConversationsJoinURL = "https://slack.com/api/conversations.join"
 )
 
 type APIClient struct {
@@ -27,13 +28,11 @@ type APIClient struct {
 }
 
 type slackAPIResponse struct {
-	OK       bool   `json:"ok"`
-	Error    string `json:"error"`
-	Needed   string `json:"needed"`
-	Provided string `json:"provided"`
-	Channel  struct {
-		ID string `json:"id"`
-	} `json:"channel"`
+	OK       bool            `json:"ok"`
+	Error    string          `json:"error"`
+	Needed   string          `json:"needed"`
+	Provided string          `json:"provided"`
+	Channel  json.RawMessage `json:"channel"`
 }
 
 func NewClient(workspaceRepo *repository.WorkspaceRepository, defaultBotToken string, logger *slog.Logger) (Client, error) {
@@ -111,7 +110,10 @@ func (c *APIClient) SendDirectMessage(ctx context.Context, workspaceID, userID, 
 		return err
 	}
 
-	channelID := strings.TrimSpace(dmResp.Channel.ID)
+	channelID, err := parseSlackChannelID(dmResp.Channel)
+	if err != nil {
+		return err
+	}
 	if channelID == "" {
 		return fmt.Errorf("slack api error: missing dm channel id")
 	}
@@ -195,6 +197,26 @@ func ValidatePlaceholders(template string) error {
 		return fmt.Errorf("template cannot be empty")
 	}
 	return nil
+}
+
+func parseSlackChannelID(raw json.RawMessage) (string, error) {
+	if len(raw) == 0 {
+		return "", nil
+	}
+
+	var asString string
+	if err := json.Unmarshal(raw, &asString); err == nil {
+		return strings.TrimSpace(asString), nil
+	}
+
+	var asObject struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(raw, &asObject); err == nil {
+		return strings.TrimSpace(asObject.ID), nil
+	}
+
+	return "", fmt.Errorf("decode slack channel id: unexpected format")
 }
 
 func slackScopeHint(needed, provided string) string {
